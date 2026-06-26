@@ -613,7 +613,10 @@ func decodeFlowRecords(recordCount uint32, data *[]byte) ([]SFlowRecord, error) 
 					return nil, err
 				}
 			default:
-				return nil, fmt.Errorf("Unsupported flow record type: %d", flowRecordType)
+				// Do not fail the sample on unknown flow record formats; skip the
+				// unknown record and continue decoding the remaining records.
+				skipRecord(data)
+				continue
 			}
 		} else {
 			skipRecord(data)
