@@ -6,6 +6,7 @@
 package layers
 
 import (
+	"encoding/binary"
 	"net"
 	"reflect"
 	"testing"
@@ -1190,6 +1191,40 @@ func TestDecodeSFlowSkipsUnknownFlowRecords(t *testing.T) {
 	}
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("SFlow layer mismatch, \nwant:\n\n%#v\ngot:\n\n\n%#v\n\n", want, got)
+	}
+}
+
+func TestDecodeSFlowSkipsUnsupportedFlowRecords(t *testing.T) {
+	tests := []struct {
+		name       string
+		recordType SFlowFlowRecordType
+	}{
+		{"mpls", SFlowTypeExtendedMlpsFlow},
+		{"nat", SFlowTypeExtendedNatFlow},
+		{"mpls tunnel", SFlowTypeExtendedMlpsTunnelFlow},
+		{"mpls vc", SFlowTypeExtendedMlpsVcFlow},
+		{"mpls fec", SFlowTypeExtendedMlpsFecFlow},
+		{"mpls lvp fec", SFlowTypeExtendedMlpsLvpFecFlow},
+		{"vlan", SFlowTypeExtendedVlanFlow},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := make([]byte, 16)
+			binary.BigEndian.PutUint32(data[0:4], uint32(tt.recordType))
+			binary.BigEndian.PutUint32(data[8:12], 0xfff)
+
+			records, err := decodeFlowRecords(2, &data)
+			if err != nil {
+				t.Fatalf("decodeFlowRecords() returned an error: %v", err)
+			}
+			if len(records) != 0 {
+				t.Errorf("decodeFlowRecords() returned %d records, want 0", len(records))
+			}
+			if len(data) != 0 {
+				t.Errorf("decodeFlowRecords() left %d bytes, want 0", len(data))
+			}
+		})
 	}
 }
 
