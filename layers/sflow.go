@@ -530,34 +530,15 @@ func decodeFlowRecords(recordCount uint32, data *[]byte) ([]SFlowRecord, error) 
 				} else {
 					return nil, err
 				}
-			case SFlowTypeExtendedMlpsFlow:
-				// TODO
+			case SFlowTypeExtendedMlpsFlow,
+				SFlowTypeExtendedNatFlow,
+				SFlowTypeExtendedMlpsTunnelFlow,
+				SFlowTypeExtendedMlpsVcFlow,
+				SFlowTypeExtendedMlpsFecFlow,
+				SFlowTypeExtendedMlpsLvpFecFlow,
+				SFlowTypeExtendedVlanFlow:
 				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedMlpsFlow")
-			case SFlowTypeExtendedNatFlow:
-				// TODO
-				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedNatFlow")
-			case SFlowTypeExtendedMlpsTunnelFlow:
-				// TODO
-				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedMlpsTunnelFlow")
-			case SFlowTypeExtendedMlpsVcFlow:
-				// TODO
-				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedMlpsVcFlow")
-			case SFlowTypeExtendedMlpsFecFlow:
-				// TODO
-				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedMlpsFecFlow")
-			case SFlowTypeExtendedMlpsLvpFecFlow:
-				// TODO
-				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedMlpsLvpFecFlow")
-			case SFlowTypeExtendedVlanFlow:
-				// TODO
-				skipRecord(data)
-				return nil, errors.New("skipping TypeExtendedVlanFlow")
+				continue
 			case SFlowTypeExtendedIpv4TunnelEgressFlow:
 				if record, err := decodeExtendedIpv4TunnelEgress(data); err == nil {
 					records = append(records, record)
@@ -613,7 +594,10 @@ func decodeFlowRecords(recordCount uint32, data *[]byte) ([]SFlowRecord, error) 
 					return nil, err
 				}
 			default:
-				return nil, fmt.Errorf("Unsupported flow record type: %d", flowRecordType)
+				// Do not fail the sample on unknown flow record formats; skip the
+				// unknown record and continue decoding the remaining records.
+				skipRecord(data)
+				continue
 			}
 		} else {
 			skipRecord(data)
